@@ -133,6 +133,9 @@
   <ItemGroup>
     <ClCompile Include="Ork_sweeper.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="ork_sweeper_sprite_sheet.png" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
