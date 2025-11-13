@@ -11,6 +11,10 @@ constexpr int SCALE = 1;
 
 std::array<std::array<int, COLS>, ROWS> field{};
 std::array<std::array<bool, COLS>, ROWS> revealed{};
+std::array<std::array<bool, COLS>, ROWS> flagged{};
+bool gameOver = false;
+
+
 
 constexpr int MINE = 9;
 constexpr int MINE_COUNT = 10;
@@ -29,7 +33,7 @@ void placeMines(std::array<std::array<int, COLS>, ROWS>& field)
 		int r = distRow(gen);
 		int c = distCol(gen);
 
-		if (field[r][c] != MINE)  // neliekam vairākas mīnas vienā vietā
+		if (field[r][c] != MINE)
 		{
 			field[r][c] = MINE;
 			placed++;
@@ -39,7 +43,7 @@ void placeMines(std::array<std::array<int, COLS>, ROWS>& field)
 
 void calculateNumbers(std::array<std::array<int, COLS>, ROWS>& field)
 {
-	// virzieni (8 apkārtējie laukumi)
+
 	const int dir[8][2] =
 	{
 		{-1, -1}, {-1, 0}, {-1, 1},
@@ -52,11 +56,11 @@ void calculateNumbers(std::array<std::array<int, COLS>, ROWS>& field)
 		for (int c = 0; c < COLS; c++)
 		{
 			if (field[r][c] == MINE)
-				continue; // mīnai skaitli neaprēķina
+				continue;
 
 			int count = 0;
 
-			// apskata visus 8 apkārtējos laukus
+
 			for (auto& d : dir)
 			{
 				int nr = r + d[0];
@@ -69,7 +73,7 @@ void calculateNumbers(std::array<std::array<int, COLS>, ROWS>& field)
 				}
 			}
 
-			field[r][c] = count; // ieliek skaitli (0..8)
+			field[r][c] = count;
 		}
 	}
 }
@@ -111,6 +115,7 @@ void revealZeros(int startRow, int startCol)
 				if (!revealed[nr][nc]) // ja vēl neatklāts
 				{
 					revealed[nr][nc] = true;
+					flagged[nr][nc] = false;
 
 					// Ja nākamais arī ir 0, turpinām paplašinājumu
 					if (field[nr][nc] == 0)
@@ -120,6 +125,17 @@ void revealZeros(int startRow, int startCol)
 		}
 	}
 }
+
+//ieliekam karodziņu, ja var
+void toggleFlag(int row, int col)
+{
+
+	if (revealed[row][col])
+		return;
+
+	flagged[row][col] = !flagged[row][col];
+}
+
 
 int main()
 {
@@ -151,7 +167,9 @@ int main()
 
 		while (const std::optional event = window.pollEvent())
 		{
-			// Window closed or escape key pressed: exit
+			if (gameOver)
+				continue;
+
 			if (event->is<sf::Event::Closed>() ||
 				(event->is<sf::Event::KeyPressed>() &&
 					event->getIf<sf::Event::KeyPressed>()->code == sf::Keyboard::Key::Escape))
@@ -167,26 +185,75 @@ int main()
 
 					if (row >= 0 && row < ROWS && col >= 0 && col < COLS)
 					{
-						if (field[row][col] == 0)
-							revealZeros(row, col);
-						else
-							revealed[row][col] = true;
+						if (!flagged[row][col])
+						{
+							if (field[row][col] == 9) // 💣 MĪNA
+							{
+								revealed[row][col] = true;
+								gameOver = true;
+							}
+							else if (field[row][col] == 0)
+								revealZeros(row, col);
+							else
+								revealed[row][col] = true;
+						}
 					}
 				}
+				if (mouse->button == sf::Mouse::Button::Right)
+				{
+					int col = mouse->position.x / TILE_SIZE;
+					int row = mouse->position.y / TILE_SIZE;
+
+					if (row >= 0 && row < ROWS && col >= 0 && col < COLS)
+					{
+						toggleFlag(row, col);
+					}
+				}
+
+
 			}
 		}
 
+		if (gameOver)
+		{
+			for (int r = 0; r < ROWS; r++)
+			{
+				for (int c = 0; c < COLS; c++)
+				{
+					if (field[r][c] == MINE)
+					{
+						revealed[r][c] = true; 
+					}
+				}
+			}
+			
+		}
+		
 		window.clear(sf::Color::Black);
 
-		// zīmē laukumu
+
 		for (int row = 0; row < ROWS; row++)
 		{
 			for (int col = 0; col < COLS; col++)
 			{
-
-				if (revealed[row][col])
+				if (flagged[row][col])
+				{
+					setTile(sprite, 11);
+				}
+				else if (revealed[row][col])
 				{
 					setTile(sprite, field[row][col]);
+
+					if (revealed[row][col])
+					{
+						setTile(sprite, field[row][col]);
+
+						if (gameOver && field[row][col] == MINE)
+							sprite.setColor(sf::Color::Red); 
+						else
+							sprite.setColor(sf::Color::White);
+					}
+
 				}
 				else
 				{
@@ -197,8 +264,10 @@ int main()
 				window.draw(sprite);
 			}
 		}
-
+		
 		window.display();
+		
+		
 	}
 
 	return 0;
