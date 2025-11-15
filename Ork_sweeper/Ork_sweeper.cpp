@@ -13,14 +13,14 @@ std::array<std::array<int, COLS>, ROWS> field{};
 std::array<std::array<bool, COLS>, ROWS> revealed{};
 std::array<std::array<bool, COLS>, ROWS> flagged{};
 bool gameOver = false;
-
-
+bool gameWon = false;
+bool firstClick = true;
 
 constexpr int MINE = 9;
 constexpr int MINE_COUNT = 10;
 
 // nejauši izkārto mīnas laukā
-void placeMines(std::array<std::array<int, COLS>, ROWS>& field)
+void placeMines(std::array<std::array<int, COLS>, ROWS>& field, int safeRow, int safeCol)
 {
 	std::random_device rd;
 	std::mt19937 gen(rd());
@@ -33,11 +33,20 @@ void placeMines(std::array<std::array<int, COLS>, ROWS>& field)
 		int r = distRow(gen);
 		int c = distCol(gen);
 
-		if (field[r][c] != MINE)
+		if (field[r][c] != MINE &&
+			!(r == safeRow && c == safeCol))
 		{
 			field[r][c] = MINE;
 			placed++;
 		}
+	}
+
+	//parāda terminālī mīnu atrašanās vietu
+	for (auto& row : field)
+	{
+		for (int cell : row)
+			std::cout << (cell == MINE ? "*" : ".") << " ";
+		std::cout << "\n";
 	}
 }
 
@@ -136,6 +145,96 @@ void toggleFlag(int row, int col)
 	flagged[row][col] = !flagged[row][col];
 }
 
+bool checkWin()
+{
+	for (int r = 0; r < ROWS; r++)
+	{
+		for (int c = 0; c < COLS; c++)
+		{
+
+			if (!revealed[r][c] && field[r][c] != 9)
+				return false;
+		}
+	}
+	return true;
+}
+
+void restartGame()
+{
+	gameOver = false;
+	gameWon = false;
+
+	for (auto& row : revealed) std::fill(row.begin(), row.end(), false);
+	for (auto& row : flagged) std::fill(row.begin(), row.end(), false);
+	for (auto& row : field) std::fill(row.begin(), row.end(), 0);
+
+	firstClick = true;
+
+}
+
+int showEndWindow(bool win)
+{
+	sf::RenderWindow popup(sf::VideoMode({ 300, 180 }), "Game Result", sf::Style::Titlebar | sf::Style::Close);
+	const sf::Font font("ArtemisRegular.ttf");
+
+	sf::Text message(font);
+	message.setString(win ? "You Win!" : "Game Over");
+	message.setCharacterSize(20);
+	message.setFillColor(win ? sf::Color::Green : sf::Color::Red);
+	message.setPosition(sf::Vector2f(70, 40));
+
+	sf::RectangleShape playAgainButton({ 160, 40 });
+	playAgainButton.setFillColor(sf::Color(80, 80, 80));
+	playAgainButton.setPosition(sf::Vector2f(70, 100));
+	message.setPosition(sf::Vector2f(70, 40));
+
+	sf::Text playAgainText(font);
+	playAgainText.setString("Play Again");
+	playAgainText.setCharacterSize(22);
+	playAgainText.setFillColor(sf::Color::White);
+	playAgainText.setPosition(sf::Vector2f(95, 107));
+
+	while (popup.isOpen())
+	{
+		while (const std::optional event = popup.pollEvent())
+		{
+			if (event->is<sf::Event::Closed>())
+				return 1;
+
+			if (event->is<sf::Event::MouseButtonPressed>())
+			{
+				auto mouse = event->getIf<sf::Event::MouseButtonPressed>();
+				if (mouse->button == sf::Mouse::Button::Left)
+				{
+					sf::Vector2f mousePos(mouse->position.x, mouse->position.y);
+					if (playAgainButton.getGlobalBounds().contains(mousePos))
+						return 0;
+				}
+			}
+		}
+
+		popup.clear(sf::Color(40, 40, 40));
+		popup.draw(message);
+		popup.draw(playAgainButton);
+		popup.draw(playAgainText);
+		popup.display();
+	}
+
+	return 1;
+}
+
+void revealAllMines()
+{
+	for (int r = 0; r < ROWS; r++)
+	{
+		for (int c = 0; c < COLS; c++)
+		{
+			if (field[r][c] == MINE)
+				revealed[r][c] = true;
+		}
+	}
+}
+
 
 int main()
 {
@@ -151,19 +250,34 @@ int main()
 
 	sprite.setScale({ SCALE, SCALE });
 
-	placeMines(field);
-	calculateNumbers(field);
 
-	//parāda terminālī mīnu atrašanās vietu
-	for (auto& row : field)
-	{
-		for (int cell : row)
-			std::cout << (cell == MINE ? "*" : ".") << " ";
-		std::cout << "\n";
-	}
 
 	while (window.isOpen())
 	{
+		if (gameOver)
+		{
+			for (int r = 0; r < ROWS; r++)
+			{
+				for (int c = 0; c < COLS; c++)
+				{
+					if (field[r][c] == MINE)
+					{
+						revealed[r][c] = true;
+					}
+				}
+			}
+
+			int action = showEndWindow(gameWon);
+
+			if (action == 0)
+			{
+				restartGame();
+			}
+			else if (action == 1)
+			{
+				window.close();
+			}
+		}
 
 		while (const std::optional event = window.pollEvent())
 		{
@@ -185,9 +299,23 @@ int main()
 
 					if (row >= 0 && row < ROWS && col >= 0 && col < COLS)
 					{
+						if (field[row][col] == MINE)
+						{
+							revealed[row][col] = true;
+							revealAllMines();
+							gameOver = true;
+						}
+
+						if (firstClick)
+						{
+							placeMines(field, row, col);
+							calculateNumbers(field);
+							firstClick = false;
+						}
+
 						if (!flagged[row][col])
 						{
-							if (field[row][col] == 9) // 💣 MĪNA
+							if (field[row][col] == 9)
 							{
 								revealed[row][col] = true;
 								gameOver = true;
@@ -199,6 +327,7 @@ int main()
 						}
 					}
 				}
+
 				if (mouse->button == sf::Mouse::Button::Right)
 				{
 					int col = mouse->position.x / TILE_SIZE;
@@ -210,25 +339,14 @@ int main()
 					}
 				}
 
-
-			}
-		}
-
-		if (gameOver)
-		{
-			for (int r = 0; r < ROWS; r++)
-			{
-				for (int c = 0; c < COLS; c++)
+				if (checkWin() && !gameOver)
 				{
-					if (field[r][c] == MINE)
-					{
-						revealed[r][c] = true; 
-					}
+					gameWon = true;
+					gameOver = true;
 				}
 			}
-			
 		}
-		
+
 		window.clear(sf::Color::Black);
 
 
@@ -248,10 +366,6 @@ int main()
 					{
 						setTile(sprite, field[row][col]);
 
-						if (gameOver && field[row][col] == MINE)
-							sprite.setColor(sf::Color::Red); 
-						else
-							sprite.setColor(sf::Color::White);
 					}
 
 				}
@@ -264,10 +378,8 @@ int main()
 				window.draw(sprite);
 			}
 		}
-		
+
 		window.display();
-		
-		
 	}
 
 	return 0;
