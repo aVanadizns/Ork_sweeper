@@ -2,30 +2,29 @@
 #include <random>
 #include <iostream>
 #include <queue>
+using namespace std;
+using namespace sf;
 
 constexpr int ROWS = 8;
 constexpr int COLS = 8;
-
 constexpr int TILE_SIZE = 48;
 constexpr int SCALE = 1;
-
-std::array<std::array<int, COLS>, ROWS> field{};
-std::array<std::array<bool, COLS>, ROWS> revealed{};
-std::array<std::array<bool, COLS>, ROWS> flagged{};
+array<array<int, COLS>, ROWS> field{};
+array<array<bool, COLS>, ROWS> revealed{};
+array<array<bool, COLS>, ROWS> flagged{};
 bool gameOver = false;
 bool gameWon = false;
 bool firstClick = true;
-
 constexpr int MINE = 9;
 constexpr int MINE_COUNT = 10;
 
 // nejauši izkārto mīnas laukā
-void placeMines(std::array<std::array<int, COLS>, ROWS>& field, int safeRow, int safeCol)
+void placeMines(array<array<int, COLS>, ROWS>& field, int safeRow, int safeCol)
 {
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_int_distribution<> distRow(0, ROWS - 1);
-	std::uniform_int_distribution<> distCol(0, COLS - 1);
+	random_device rd;
+	mt19937 gen(rd());
+	uniform_int_distribution<> distRow(0, ROWS - 1);
+	uniform_int_distribution<> distCol(0, COLS - 1);
 
 	int placed = 0;
 	while (placed < MINE_COUNT)
@@ -45,12 +44,12 @@ void placeMines(std::array<std::array<int, COLS>, ROWS>& field, int safeRow, int
 	for (auto& row : field)
 	{
 		for (int cell : row)
-			std::cout << (cell == MINE ? "*" : ".") << " ";
-		std::cout << "\n";
+			cout << (cell == MINE ? "*" : ".") << " ";
+		cout << "\n";
 	}
 }
 
-void calculateNumbers(std::array<std::array<int, COLS>, ROWS>& field)
+void calculateNumbers(array<array<int, COLS>, ROWS>& field)
 {
 
 	const int dir[8][2] =
@@ -87,7 +86,7 @@ void calculateNumbers(std::array<std::array<int, COLS>, ROWS>& field)
 	}
 }
 
-void setTile(sf::Sprite& sprite, int value) {
+void setTile(Sprite& sprite, int value) {
 	int sLocation = value * TILE_SIZE;
 	sprite.setTextureRect({ {sLocation, 0},{TILE_SIZE, TILE_SIZE} });
 }
@@ -98,7 +97,7 @@ void revealZeros(int startRow, int startCol)
 	if (field[startRow][startCol] != 0)
 		return;
 
-	std::queue<std::pair<int, int>> q;
+	queue<pair<int, int>> q;
 	q.push({ startRow, startCol });
 	revealed[startRow][startCol] = true;
 
@@ -164,62 +163,60 @@ void restartGame()
 	gameOver = false;
 	gameWon = false;
 
-	for (auto& row : revealed) std::fill(row.begin(), row.end(), false);
-	for (auto& row : flagged) std::fill(row.begin(), row.end(), false);
-	for (auto& row : field) std::fill(row.begin(), row.end(), 0);
+	for (auto& row : revealed) fill(row.begin(), row.end(), false);
+	for (auto& row : flagged) fill(row.begin(), row.end(), false);
+	for (auto& row : field) fill(row.begin(), row.end(), 0);
 
 	firstClick = true;
-
 }
 
 int showEndWindow(bool win)
 {
-	sf::RenderWindow popup(sf::VideoMode({ 300, 180 }), "Game Result", sf::Style::Titlebar | sf::Style::Close);
-	const sf::Font font("ArtemisRegular.ttf");
+	RenderWindow popup(VideoMode({ 300, 180 }), "Game Result", Style::Titlebar | Style::Close);
+	const Font font("ArtemisRegular.ttf");
 
-	sf::Text message(font);
+	Text message(font);
 	message.setString(win ? "You Win!" : "Game Over");
 	message.setCharacterSize(20);
-	message.setFillColor(win ? sf::Color::Green : sf::Color::Red);
-	message.setPosition(sf::Vector2f(70, 40));
+	message.setFillColor(win ? Color::Green : Color::Red);
+	message.setPosition(Vector2f(70, 40));
 
-	sf::RectangleShape playAgainButton({ 160, 40 });
-	playAgainButton.setFillColor(sf::Color(80, 80, 80));
-	playAgainButton.setPosition(sf::Vector2f(70, 100));
-	message.setPosition(sf::Vector2f(70, 40));
+	RectangleShape playAgainButton({ 160, 40 });
+	playAgainButton.setFillColor(Color(80, 80, 80));
+	playAgainButton.setPosition(Vector2f(70, 100));
+	message.setPosition(Vector2f(70, 40));
 
-	sf::Text playAgainText(font);
+	Text playAgainText(font);
 	playAgainText.setString("Play Again");
 	playAgainText.setCharacterSize(22);
-	playAgainText.setFillColor(sf::Color::White);
-	playAgainText.setPosition(sf::Vector2f(95, 107));
+	playAgainText.setFillColor(Color::White);
+	playAgainText.setPosition(Vector2f(95, 107));
 
 	while (popup.isOpen())
 	{
-		while (const std::optional event = popup.pollEvent())
+		while (const optional event = popup.pollEvent())
 		{
-			if (event->is<sf::Event::Closed>())
+			if (event->is<Event::Closed>())
 				return 1;
 
-			if (event->is<sf::Event::MouseButtonPressed>())
+			if (event->is<Event::MouseButtonPressed>())
 			{
-				auto mouse = event->getIf<sf::Event::MouseButtonPressed>();
-				if (mouse->button == sf::Mouse::Button::Left)
+				auto mouse = event->getIf<Event::MouseButtonPressed>();
+				if (mouse->button == Mouse::Button::Left)
 				{
-					sf::Vector2f mousePos(mouse->position.x, mouse->position.y);
+					Vector2f mousePos(mouse->position.x, mouse->position.y);
 					if (playAgainButton.getGlobalBounds().contains(mousePos))
 						return 0;
 				}
 			}
 		}
 
-		popup.clear(sf::Color(40, 40, 40));
+		popup.clear(Color(40, 40, 40));
 		popup.draw(message);
 		popup.draw(playAgainButton);
 		popup.draw(playAgainText);
 		popup.display();
 	}
-
 	return 1;
 }
 
@@ -235,21 +232,19 @@ void revealAllMines()
 	}
 }
 
-
 int main()
 {
-	sf::RenderWindow window(sf::VideoMode({ COLS * TILE_SIZE , ROWS * TILE_SIZE }), "Ork_sweeper");
+	RenderWindow window(VideoMode({ COLS * TILE_SIZE , ROWS * TILE_SIZE }), "Ork_sweeper");
 
-	sf::Texture tilesTexture;
+	Texture tilesTexture;
 	if (!tilesTexture.loadFromFile("Ork_sweeper_sprite_sheet.png"))
 		return 1;
 
-	sf::Sprite sprite(tilesTexture);
+	Sprite sprite(tilesTexture);
 
 	sprite.setTextureRect({ { 480, 0},{ TILE_SIZE, TILE_SIZE } });
 
 	sprite.setScale({ SCALE, SCALE });
-
 
 
 	while (window.isOpen())
@@ -279,20 +274,20 @@ int main()
 			}
 		}
 
-		while (const std::optional event = window.pollEvent())
+		while (const optional event = window.pollEvent())
 		{
 			if (gameOver)
 				continue;
 
-			if (event->is<sf::Event::Closed>() ||
-				(event->is<sf::Event::KeyPressed>() &&
-					event->getIf<sf::Event::KeyPressed>()->code == sf::Keyboard::Key::Escape))
+			if (event->is<Event::Closed>() ||
+				(event->is<Event::KeyPressed>() &&
+					event->getIf<Event::KeyPressed>()->code == Keyboard::Key::Escape))
 				window.close();
 
-			if (event->is<sf::Event::MouseButtonPressed>())
+			if (event->is<Event::MouseButtonPressed>())
 			{
-				auto mouse = event->getIf<sf::Event::MouseButtonPressed>();
-				if (mouse->button == sf::Mouse::Button::Left)
+				auto mouse = event->getIf<Event::MouseButtonPressed>();
+				if (mouse->button == Mouse::Button::Left)
 				{
 					int col = mouse->position.x / TILE_SIZE;
 					int row = mouse->position.y / TILE_SIZE;
@@ -328,7 +323,7 @@ int main()
 					}
 				}
 
-				if (mouse->button == sf::Mouse::Button::Right)
+				if (mouse->button == Mouse::Button::Right)
 				{
 					int col = mouse->position.x / TILE_SIZE;
 					int row = mouse->position.y / TILE_SIZE;
@@ -347,8 +342,7 @@ int main()
 			}
 		}
 
-		window.clear(sf::Color::Black);
-
+		window.clear(Color::Black);
 
 		for (int row = 0; row < ROWS; row++)
 		{
@@ -367,18 +361,16 @@ int main()
 						setTile(sprite, field[row][col]);
 
 					}
-
 				}
 				else
 				{
 					setTile(sprite, 10);
 				}
 
-				sprite.setPosition(sf::Vector2f(static_cast<float>(col * TILE_SIZE), static_cast<float>(row * TILE_SIZE)));
+				sprite.setPosition(Vector2f(static_cast<float>(col * TILE_SIZE), static_cast<float>(row * TILE_SIZE)));
 				window.draw(sprite);
 			}
 		}
-
 		window.display();
 	}
 

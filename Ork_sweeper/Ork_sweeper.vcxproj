@@ -140,6 +140,9 @@
   <ItemGroup>
     <Image Include="ork_sweeper_sprite_sheet.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Font Include="ArtemisRegular.ttf" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
