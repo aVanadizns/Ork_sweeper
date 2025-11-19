@@ -9,9 +9,20 @@ constexpr int ROWS = 8;
 constexpr int COLS = 8;
 constexpr int TILE_SIZE = 48;
 constexpr int SCALE = 1;
-array<array<int, COLS>, ROWS> field{};
-array<array<bool, COLS>, ROWS> revealed{};
-array<array<bool, COLS>, ROWS> flagged{};
+
+class Tile {
+public:
+	int value;
+	bool revealed;
+	bool flagged;
+
+	Tile() : value(0), revealed(false), flagged(false) {}
+};
+
+
+array<array<Tile, COLS>, ROWS> field;
+//array<array<bool, COLS>, ROWS> revealed{};
+//array<array<bool, COLS>, ROWS> flagged{};
 bool gameOver = false;
 bool gameWon = false;
 bool firstClick = true;
@@ -19,7 +30,7 @@ constexpr int MINE = 9;
 constexpr int MINE_COUNT = 10;
 
 // nejauši izkārto mīnas laukā
-void placeMines(array<array<int, COLS>, ROWS>& field, int safeRow, int safeCol)
+void placeMines(int safeRow, int safeCol)
 {
 	random_device rd;
 	mt19937 gen(rd());
@@ -32,10 +43,10 @@ void placeMines(array<array<int, COLS>, ROWS>& field, int safeRow, int safeCol)
 		int r = distRow(gen);
 		int c = distCol(gen);
 
-		if (field[r][c] != MINE &&
+		if (field[r][c].value != MINE &&
 			!(r == safeRow && c == safeCol))
 		{
-			field[r][c] = MINE;
+			field[r][c].value = MINE;
 			placed++;
 		}
 	}
@@ -43,13 +54,13 @@ void placeMines(array<array<int, COLS>, ROWS>& field, int safeRow, int safeCol)
 	//parāda terminālī mīnu atrašanās vietu
 	for (auto& row : field)
 	{
-		for (int cell : row)
-			cout << (cell == MINE ? "*" : ".") << " ";
+		for (auto cell : row)
+			cout << (cell.value == MINE ? "*" : ".") << " ";
 		cout << "\n";
 	}
 }
 
-void calculateNumbers(array<array<int, COLS>, ROWS>& field)
+void calculateNumbers()
 {
 
 	const int dir[8][2] =
@@ -63,7 +74,7 @@ void calculateNumbers(array<array<int, COLS>, ROWS>& field)
 	{
 		for (int c = 0; c < COLS; c++)
 		{
-			if (field[r][c] == MINE)
+			if (field[r][c].value == MINE)
 				continue;
 
 			int count = 0;
@@ -76,30 +87,29 @@ void calculateNumbers(array<array<int, COLS>, ROWS>& field)
 
 				if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS)
 				{
-					if (field[nr][nc] == MINE)
+					if (field[nr][nc].value == MINE)
 						count++;
 				}
 			}
 
-			field[r][c] = count;
+			field[r][c].value = count;
 		}
 	}
 }
 
 void setTile(Sprite& sprite, int value) {
-	int sLocation = value * TILE_SIZE;
-	sprite.setTextureRect({ {sLocation, 0},{TILE_SIZE, TILE_SIZE} });
+	sprite.setTextureRect({ {value * TILE_SIZE, 0},{TILE_SIZE, TILE_SIZE} });
 }
 
 //funkcija kas atklāj tukšos laukus (made by ChatGPT)
 void revealZeros(int startRow, int startCol)
 {
-	if (field[startRow][startCol] != 0)
+	if (field[startRow][startCol].value != 0)
 		return;
 
 	queue<pair<int, int>> q;
 	q.push({ startRow, startCol });
-	revealed[startRow][startCol] = true;
+	field[startRow][startCol].revealed = true;
 
 	const int dir[8][2] =
 	{
@@ -120,13 +130,14 @@ void revealZeros(int startRow, int startCol)
 
 			if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS)
 			{
-				if (!revealed[nr][nc]) // ja vēl neatklāts
+				Tile& t = field[nr][nc];
+				if (!t.revealed) // ja vēl neatklāts
 				{
-					revealed[nr][nc] = true;
-					flagged[nr][nc] = false;
+					t.revealed = true;
+					t.flagged = false;
 
 					// Ja nākamais arī ir 0, turpinām paplašinājumu
-					if (field[nr][nc] == 0)
+					if (t.value == 0)
 						q.push({ nr, nc });
 				}
 			}
@@ -137,11 +148,11 @@ void revealZeros(int startRow, int startCol)
 //ieliekam karodziņu, ja var
 void toggleFlag(int row, int col)
 {
-
-	if (revealed[row][col])
+	Tile& t = field[row][col];
+	if (t.revealed)
 		return;
 
-	flagged[row][col] = !flagged[row][col];
+	t.flagged = !t.flagged;
 }
 
 bool checkWin()
@@ -151,7 +162,7 @@ bool checkWin()
 		for (int c = 0; c < COLS; c++)
 		{
 
-			if (!revealed[r][c] && field[r][c] != 9)
+			if (!field[r][c].revealed && field[r][c].value != MINE)
 				return false;
 		}
 	}
@@ -162,12 +173,11 @@ void restartGame()
 {
 	gameOver = false;
 	gameWon = false;
-
-	for (auto& row : revealed) fill(row.begin(), row.end(), false);
-	for (auto& row : flagged) fill(row.begin(), row.end(), false);
-	for (auto& row : field) fill(row.begin(), row.end(), 0);
-
 	firstClick = true;
+
+	for (auto& row : field) 
+		for(Tile& t : row) 
+			t=Tile();
 }
 
 int showEndWindow(bool win)
@@ -222,14 +232,10 @@ int showEndWindow(bool win)
 
 void revealAllMines()
 {
-	for (int r = 0; r < ROWS; r++)
-	{
-		for (int c = 0; c < COLS; c++)
-		{
-			if (field[r][c] == MINE)
-				revealed[r][c] = true;
-		}
-	}
+	for (auto& row : field)
+		for (Tile& t : row)
+			if (t.value == MINE)
+				t.revealed = true;
 }
 
 int main()
@@ -251,16 +257,8 @@ int main()
 	{
 		if (gameOver)
 		{
-			for (int r = 0; r < ROWS; r++)
-			{
-				for (int c = 0; c < COLS; c++)
-				{
-					if (field[r][c] == MINE)
-					{
-						revealed[r][c] = true;
-					}
-				}
-			}
+	
+			revealAllMines();
 
 			int action = showEndWindow(gameWon);
 
@@ -294,31 +292,34 @@ int main()
 
 					if (row >= 0 && row < ROWS && col >= 0 && col < COLS)
 					{
-						if (field[row][col] == MINE)
+
+						Tile& t = field[row][col];
+
+						if (field[row][col].value == MINE)
 						{
-							revealed[row][col] = true;
+							t.revealed = true;
 							revealAllMines();
 							gameOver = true;
 						}
 
 						if (firstClick)
 						{
-							placeMines(field, row, col);
-							calculateNumbers(field);
+							placeMines(row, col);
+							calculateNumbers();
 							firstClick = false;
 						}
 
-						if (!flagged[row][col])
+						if (!t.flagged)
 						{
-							if (field[row][col] == 9)
+							if (field[row][col].value == MINE)
 							{
-								revealed[row][col] = true;
+								t.revealed = true;
 								gameOver = true;
 							}
-							else if (field[row][col] == 0)
+							else if (field[row][col].value == 0)
 								revealZeros(row, col);
 							else
-								revealed[row][col] = true;
+								t.revealed = true;
 						}
 					}
 				}
@@ -348,17 +349,20 @@ int main()
 		{
 			for (int col = 0; col < COLS; col++)
 			{
-				if (flagged[row][col])
+
+				Tile& t = field[row][col];
+
+				if (t.flagged)
 				{
 					setTile(sprite, 11);
 				}
-				else if (revealed[row][col])
+				else if (t.revealed)
 				{
-					setTile(sprite, field[row][col]);
+					setTile(sprite, t.value);
 
-					if (revealed[row][col])
+					if (t.revealed)
 					{
-						setTile(sprite, field[row][col]);
+						setTile(sprite, t.value);
 
 					}
 				}
