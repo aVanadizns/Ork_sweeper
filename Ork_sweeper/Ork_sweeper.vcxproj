@@ -138,12 +138,28 @@
     <ClCompile Include="Ork_sweeper.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="Board.png" />
     <Image Include="ork_sweeper_sprite_sheet.png" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="ArtemisRegular.ttf" />
+    <Font Include="clock_font.otf" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
+  <ItemGroup>
+    <Content Include="Ork_sweeper_sprite_sheet.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="board.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="clock_font.otf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ArtemisRegular.ttf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 </Project>

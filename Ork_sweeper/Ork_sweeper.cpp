@@ -392,6 +392,7 @@ int main()
 
 				if (checkWin() && !gameOver)
 				{
+					clock.restart();
 					gameWon = true;
 					gameOver = true;
 				}
