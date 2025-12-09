@@ -12,7 +12,6 @@ constexpr int COLS = 8;
 constexpr int TILE_SIZE = 48;
 constexpr int SCALE = 1;
 constexpr int TOP_BAR_HEIGHT = 80;
-array<array<Tile, COLS>, ROWS> field;
 bool gameOver = false;
 bool gameWon = false;
 bool firstClick = true;
@@ -28,6 +27,8 @@ public:
 
 	Tile() : value(0), revealed(false), flagged(false) {}
 };
+
+array<array<Tile, COLS>, ROWS> field;
 
 // nejauši izkārto mīnas laukā
 void placeMines(int safeRow, int safeCol)
