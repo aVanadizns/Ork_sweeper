@@ -43,5 +43,3 @@ No Visual Studio:
   - Debug x64 vai Release x64
 - Pārliecinies, ka SFML DLL faili ir iekļauti izpildmapē
 - Spied Local Windows Debugger
-
-
