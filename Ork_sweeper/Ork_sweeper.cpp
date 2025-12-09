@@ -6,12 +6,20 @@
 using namespace std;
 using namespace sf;
 
+// konstantes un mainīgie spēles loģikai
 constexpr int ROWS = 8;
 constexpr int COLS = 8;
 constexpr int TILE_SIZE = 48;
 constexpr int SCALE = 1;
 constexpr int TOP_BAR_HEIGHT = 80;
+array<array<Tile, COLS>, ROWS> field;
+bool gameOver = false;
+bool gameWon = false;
+bool firstClick = true;
+constexpr int MINE = 9;
+constexpr int MINE_COUNT = 10;
 
+//klase kas glabā informāciju par katru lauku
 class Tile {
 public:
 	int value;
@@ -20,13 +28,6 @@ public:
 
 	Tile() : value(0), revealed(false), flagged(false) {}
 };
-
-array<array<Tile, COLS>, ROWS> field;
-bool gameOver = false;
-bool gameWon = false;
-bool firstClick = true;
-constexpr int MINE = 9;
-constexpr int MINE_COUNT = 10;
 
 // nejauši izkārto mīnas laukā
 void placeMines(int safeRow, int safeCol)
@@ -59,6 +60,7 @@ void placeMines(int safeRow, int safeCol)
 	}
 }
 
+// aprēķina skaitļus katram laukam
 void calculateNumbers()
 {
 	const int dir[8][2] =
@@ -91,6 +93,7 @@ void calculateNumbers()
 	}
 }
 
+//funkcija kas iestata sprite tekstūru atbilstoši vērtībai
 void setTile(Sprite& sprite, int value) {
 	sprite.setTextureRect({ {value * TILE_SIZE, 0},{TILE_SIZE, TILE_SIZE} });
 }
@@ -149,6 +152,7 @@ void toggleFlag(int row, int col)
 	t.flagged = !t.flagged;
 }
 
+//pārbauda vai spēle ir uzvarēta
 bool checkWin()
 {
 	for (int r = 0; r < ROWS; r++)
@@ -163,6 +167,7 @@ bool checkWin()
 	return true;
 }
 
+// restartē spēli
 void restartGame()
 {
 	gameOver = false;
@@ -174,6 +179,7 @@ void restartGame()
 			t=Tile();
 }
 
+// parāda uzvaras/zaudējuma logu
 int showEndWindow(bool win)
 {
 	RenderWindow popup(VideoMode({ 300, 180 }), "Game Result", Style::Titlebar | Style::Close);
@@ -224,6 +230,7 @@ int showEndWindow(bool win)
 	return 1;
 }
 
+// atklāj visas mīnas
 void revealAllMines()
 {
 	for (auto& row : field)
@@ -232,7 +239,8 @@ void revealAllMines()
 				t.revealed = true;
 }
 
-String countFlags()
+// saskaita atlikušās mīnas un formatē skaitli displejam
+String countBombs()
 {
 	int flags = 0;
 	for (int r = 0; r < ROWS; r++)
@@ -252,9 +260,10 @@ String countFlags()
 	return mine_display;
 }
 
-
+// galvenā funkcija
 int main()
 {
+	// izveidojam logu un ielādējam resursus
 	Clock clock;
 	int seconds = 0;
 	RenderWindow window(VideoMode({ COLS * TILE_SIZE , ROWS * TILE_SIZE + TOP_BAR_HEIGHT }), "Ork_sweeper");
@@ -292,16 +301,17 @@ int main()
 	sprite.setTextureRect({ { 480, 0},{ TILE_SIZE, TILE_SIZE } });
 	sprite.setScale({ SCALE, SCALE });
 
-
+	// galvenais spēles cikls
 	while (window.isOpen())
 	{
+		// pārbauda vai spēle ir beigusies
 		if (gameOver)
 		{
-	
 			revealAllMines();
 
 			int action = showEndWindow(gameWon);
 
+			// rīcība pēc spēles beigām, lietotāja izvēle izlecošajā logā
 			if (action == 0)
 			{
 				restartGame();
@@ -312,13 +322,15 @@ int main()
 			}
 		}
 
+		// notikumu apstrāde
 		while (const optional event = window.pollEvent())
 		{
-			mines.setString(countFlags());
+			mines.setString(countBombs());
 
 			if (gameOver)
 				continue;
 
+			// atjaunina taimeri, ja spēle nav beigusies un nav pirmais klikšķis
 			if (!gameOver && !firstClick)
 			{
 				if (!clock.isRunning())
@@ -327,14 +339,19 @@ int main()
 				time.setString(std::to_string(seconds));
 			}
 
+			// aizver logu, ja nospiesta aizvēršanas poga vai Escape taustiņš
 			if (event->is<Event::Closed>() ||
 				(event->is<Event::KeyPressed>() &&
 					event->getIf<Event::KeyPressed>()->code == Keyboard::Key::Escape))
 				window.close();
 
+			// apstrādā peles klikšķus
 			if (event->is<Event::MouseButtonPressed>())
 			{
+				
 				auto mouse = event->getIf<Event::MouseButtonPressed>();
+
+				// kreisais klikšķa apstrāde
 				if (mouse->button == Mouse::Button::Left)
 				{
 					int col = mouse->position.x / TILE_SIZE ;
@@ -379,6 +396,7 @@ int main()
 					}
 				}
 
+				// labais klikšķa apstrāde
 				if (mouse->button == Mouse::Button::Right)
 				{
 					int col = mouse->position.x / TILE_SIZE ;
@@ -390,6 +408,7 @@ int main()
 					}
 				}
 
+				// pārbauda uzvaras nosacījumus pēc katra klikšķa
 				if (checkWin() && !gameOver)
 				{
 					clock.restart();
@@ -399,8 +418,10 @@ int main()
 			}
 		}
 
+		// ciklā notīra spēles laukumu
 		window.clear(Color::Black);
 
+		// iestata spēles lauku atbilstoši tā stāvoklim
 		for (int row = 0; row < ROWS; row++)
 		{
 			for (int col = 0; col < COLS; col++)
@@ -427,13 +448,18 @@ int main()
 					setTile(sprite, 10);
 				}
 
+				// uzzīmē augšējo paneli pareizajā vietā
 				sprite.setPosition(Vector2f(static_cast<float>(col * TILE_SIZE), static_cast<float>(row * TILE_SIZE + TOP_BAR_HEIGHT)));
+
+				// zīmē spēles laukumu logā
 				window.draw(sprite);
 				window.draw(boardSprite);
 				window.draw(mines);
 				window.draw(time);
 			}
 		}
+
+		// parāda visu logu
 		window.display();
 	}
 
