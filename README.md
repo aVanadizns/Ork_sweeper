@@ -4,6 +4,8 @@ Ork Sweeper ir klasiskā Minesweeper spēles interpretācija, uzrakstīta C++ va
 
 <img width="183" height="293" alt="image" src="https://github.com/user-attachments/assets/1a162ebf-7ea6-454a-aefa-b6cbe131d99f" />   <img width="184" height="291" alt="image" src="https://github.com/user-attachments/assets/fc86f804-f58a-4e8d-82fd-b0e32f32f7d0" />
 
+[![Watch the video](https://github.com/user-attachments/assets/c9e53254-76ba-468c-8553-42d7cb5d9e82)](https://github.com/user-attachments/assets/bea19362-6eb4-453e-b28c-508620ef6028)
+
 ### Spēlē ir:
 - drošais pirmais klikšķis (mīnas ģenerējas tikai pēc pirmā klikšķa),
 - automātiska nulles lauciņu atvēršana (BFS algoritms),
