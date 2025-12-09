@@ -2,7 +2,7 @@
 
 Ork Sweeper ir klasiskā Minesweeper spēles interpretācija, uzrakstīta C++ valodā, izmantojot SFML 3.0 bibliotēku un paredzēta palaišanai Visual Studio 2022 vidē.
 
-[![Watch the video](https://github.com/aVanadizns/Ork_sweeper/blob/master/ork_sweeper.png)](https://github.com/aVanadizns/Ork_sweeper/blob/master/Ork_sweeper.mp4)
+<img width="183" height="293" alt="image" src="https://github.com/user-attachments/assets/1a162ebf-7ea6-454a-aefa-b6cbe131d99f" />   <img width="184" height="291" alt="image" src="https://github.com/user-attachments/assets/fc86f804-f58a-4e8d-82fd-b0e32f32f7d0" />
 
 ### Spēlē ir:
 - drošais pirmais klikšķis (mīnas ģenerējas tikai pēc pirmā klikšķa),
@@ -43,5 +43,3 @@ No Visual Studio:
   - Debug x64 vai Release x64
 - Pārliecinies, ka SFML DLL faili ir iekļauti izpildmapē
 - Spied Local Windows Debugger
-
-
